@@ -1,0 +1,22 @@
+---
+- name: installing tftpd-hpa.
+  hosts: node1
+  remote_user: rudi
+  become: True
+ 
+  tasks:
+    - name: Ping node1                    #om te testen of de node bereikbaar is voor de installatie begint.
+      ping:
+ 
+    - name: Install tftpd-hpa package
+      apt:
+        name: tftpd-hpa                   #installatie van tftpd-hpa
+        state: present
+    
+    - name: Give insecure permissions to an existing file
+      ansible.builtin.file:
+        path: /tftpboot
+        state: directory
+        owner: tftp
+        group: tftp
+        mode: '0777'

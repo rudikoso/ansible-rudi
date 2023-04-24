@@ -5,18 +5,45 @@
   become: True
  
   tasks:
-    - name: Ping node1                    #om te testen of de node bereikbaar is voor de installatie begint.
+    - name: Ping node1                      #om te testen of de node bereikbaar is voor de installatie begint.
       ping:
  
-    - name: Install tftpd-hpa package
+    - name: Install tftpd-hpa package.
       apt:
-        name: tftpd-hpa                   #installatie van tftpd-hpa
+        name: tftpd-hpa                     #installatie van tftpd-hpa.
         state: present
-    
-    - name: Give insecure permissions to an existing file
+
+    - name: Make a directory and give it the right permissions.
       ansible.builtin.file:
-        path: /tftpboot
+        path: /tftpboot                     #Maak een tftpboot fdirectory.                 
         state: directory
-        owner: tftp
-        group: tftp
-        mode: '0777'
+        owner: tftp                         #pas owner aan naar tftp.
+        group: tftp                         #pas group aan naar tftp.
+        mode: '0777'                        #zorg dat er in deze directory kan gelezen, geschreven en uitvoerbaar is.
+    
+    - name: Copy file as backup.
+      ansible.builtin.copy:
+        src: /etc/default/tftpd-hpa         #Verwijs naar de locatie van de file.
+        dest: /etc/default/tftpd-hpa.BAK    #Maak een backup.
+
+    - name: Pas de regel TFTP_DIRECTORY aan in het bestand.
+      ansible.builtin.lineinfile:
+        path: /etc/default/tftpd-hpa        #geef het pad op waar de file staat.
+        regexp: '^TFTP_DIRECTORY='          #geef aan welke lijn in de file moet aangepast worden.
+        line: 'TFTP_DIRECTORY="/tftpboot"'  #voeg /tftpboot toe aan de lijn.
+
+    #Zorgen dat er logs wordt aangemaakt. Hiervoor gaan we eerst de service van tftpd-hpa moeten stoppen.
+    #Na de configuratie zal de service handmatig opgestart worden.
+
+    - name: Stop the tftpd-hpa.service.
+      ansible.builtin.service:
+        name: tftpd-hpa                     #Naam van de service die we gaan stoppen.                     
+        state: stopped                      #opdracht om te stoppen.
+
+    #--verbose en -vvvv geven de maximum aan logging mee.
+
+    - name: Pas de regel TFTP_OPTIONS aan in het bestand.
+      ansible.builtin.lineinfile:
+        path: /etc/default/tftpd-hpa        #geef het pad op waar de file staat.
+        regexp: '^TFTP_OPTIONS='            #geef aan welke lijn in de file moet aangepast worden.
+        line: 'TFTP_OPTIONS="--verbose -c -vvvv --logfile /var/log/tftpd.log"'  #voeg loging toe aan de lijn.

@@ -1,4 +1,3 @@
-# ansible-tfptd-hpa
 # Opdracht automatiseren voor SIMLAB2
  
 Voor deze opdracht zal ik de service tftp installeren en configureren via een playbook.
@@ -32,7 +31,15 @@ Hievoor gaan we een debug inschakelen.  De service zal eerst gestopt worden, we 
 https://docs.ansible.com/ansible/latest/collections/ansible/builtin/service_module.html
 
 ## Pas config tftpd-hpa aan.
-Pas TFTP_OPTIONS aan naar "--verbose -c -vvvv --logfile /var/log/tftpd.log".
-Hierdoor zullen er logs gemaakt worden in /var/log/tftpd.log.
+Pas TFTP_OPTIONS aan naar "--secure --create --verbose".
+Hierdoor zullen er logs gemaakt worden in /var/log/syslog.
 
+## Start service tftpd-hpa handmatig op.
+We starten deze keer niet via systemctl de service op maar gaan dit handmatig opstarten.
+Hierdoor kan ik verbosity 5 meegeven wat ervoor zorgt dat het maximum aan logging wordt gegenereerd.
+Dit zal via het volde cmd gebeuren "sudo service tftpd-hpa start -verbosity 5 ".
+
+## logfile.
+Vervolgens maak ik de file tftp.log aan via touch en geef ik deze file rw-rw-r rechten zodat deze beschreven kan worden.
+Deze file is nodig omdat er dagelijks een script zal runnen via crontab om de tftp logs uit de syslog weg te schijven.
 

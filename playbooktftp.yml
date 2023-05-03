@@ -39,11 +39,144 @@
       ansible.builtin.service:
         name: tftpd-hpa                     #Naam van de service die we gaan stoppen.                     
         state: stopped                      #opdracht om te stoppen.
-
+    
     #--verbose en -vvvv geven de maximum aan logging mee.
 
     - name: Pas de regel TFTP_OPTIONS aan in het bestand.
       ansible.builtin.lineinfile:
-        path: /etc/default/tftpd-hpa        #geef het pad op waar de file staat.
-        regexp: '^TFTP_OPTIONS='            #geef aan welke lijn in de file moet aangepast worden.
-        line: 'TFTP_OPTIONS="--verbose -c -vvvv --logfile /var/log/tftpd.log"'  #voeg loging toe aan de lijn.
+        path: /etc/default/tftpd-hpa                        #geef het pad op waar de file staat.
+        regexp: '^TFTP_OPTIONS='                            #geef aan welke lijn in de file moet aangepast worden.
+        line: 'TFTP_OPTIONS="--secure --create --verbose"'  #voeg loging toe aan de lijn.
+
+    #Opstarten vanuit de shell om verbosity 5 mee te geven.
+
+    - name: Handmatig opstarten van tftpd-hpa.service.
+      command: sudo service tftpd-hpa start -verbosity 5    #Om logs te creëren moet de service handmatig en met verbosity 5 worden opgestart.
+
+    #Logfile aanmaken en rechten aanpassen.
+
+    - name: Make a directory and give it the right permissions.
+      ansible.builtin.file:
+        path: /home/rudi/tar-files          #Maak een tftpboot fdirectory.                 
+        state: directory
+        owner: rudi                         #pas owner aan naar tftp.
+        group: rudi                         #pas group aan naar tftp.
+        mode: '0777'
+
+    - name: Make a directory and give it the right permissions.
+      ansible.builtin.file:
+        path: /home/rudi/tftplog            #Maak een tftpboot fdirectory.                 
+        state: directory
+        owner: rudi                         #pas owner aan naar tftp.
+        group: rudi                         #pas group aan naar tftp.
+        mode: '0777'
+
+    - name:  Aanmaken van een file om scrip te maken.
+      ansible.builtin.file:
+        path: /usr/local/sbin/log.sh        #locatie van het script.
+        state: touch                        #Aanmaken van de file log.sh.
+        mode: '0777'                        #chmod 777.
+
+    - name: Create Bash script
+      ansible.builtin.copy:                 #kopieer deze inhoud in het script.
+        content: |
+          #!/bin/bash
+          LOG_DIR=/home/rudi/tftplog
+          DATE=$(date '+%Y-%m-%d-%H-%M')
+          LOG_FILE=$LOG_DIR/tftp-$DATE.log
+
+          grep "in.tftpd" /var/log/syslog | grep "in.tftpd" | grep filename | cut -d" " -f1-4,6-11 >> $LOG_FILE
+        dest: /usr/local/sbin/log.sh        #locatie van het sript.
+
+    - name:  Aanmaken van een file om scrip te maken.
+      ansible.builtin.file:
+        path: /usr/local/sbin/tar.sh        #locatie van het script.
+        state: touch                        #Aanmaken van de file log.sh.
+        mode: '0777'                        #chmod 777.
+
+    - name: Create Bash script
+      ansible.builtin.copy:                 #Script om een Tar te maken van alle logs in /tftplog en tftp-files in /tftpboot.
+        content: |
+          #!/bin/bash
+          LOG_DIR=/home/rudi/
+          DATE=$(date '+%Y-%m-%d-%H-%M-%S')
+          LOG_FILE=$LOG_DIR/tftp-$DATE.log
+          TFTPLOG_TAR=$LOG_DIR/tftplog-$DATE.tar
+          TFTPBOOT_TAR=$LOG_DIR/tftpboot-$DATE.tar
+          LOG_SUCCESS="SUCCESS: tftplog.tar and tftpboot.tar created successfully."
+          LOG_ERROR="ERROR: Failed to create tftplog.tar and tftpboot.tar."
+          LOG_RM_SUCCESS="SUCCESS: tftplog and tftpboot files deleted."
+          LOG_RM_ERROR="ERROR: Failed to delete tftplog and tftpboot files."
+
+          # Create tar archive of tftplog directory
+          tar -cvf $TFTPLOG_TAR $LOG_DIR/tftplog/* >/dev/null 2>&1
+          if [ $? -eq 0 ]; then
+              echo "SUCCESS: tftplog.tar created successfully." >> $LOG_FILE
+          else
+              echo "ERROR: Failed to create tftplog.tar." >> $LOG_FILE
+              exit 1
+          fi
+
+          # Verify tftplog tar archive
+          tar -tvf $TFTPLOG_TAR >/dev/null 2>&1
+          if [ $? -ne 0 ]; then
+              echo "ERROR: Failed to verify tftplog.tar." >> $LOG_FILE
+              exit 1
+          fi
+
+          # Create tar archive of tftpboot directory
+          tar -cvf $TFTPBOOT_TAR /tftpboot/* >/dev/null 2>&1
+          if [ $? -eq 0 ]; then
+              echo "SUCCESS: tftpboot.tar created successfully." >> $LOG_FILE
+          else
+              echo "ERROR: Failed to create tftpboot.tar." >> $LOG_FILE
+              exit 1
+          fi
+
+          # Verify tftpboot tar archive
+          tar -tvf $TFTPBOOT_TAR >/dev/null 2>&1
+          if [ $? -ne 0 ]; then
+              echo "ERROR: Failed to verify tftpboot.tar." >> $LOG_FILE
+              exit 1
+          fi
+
+          # Remove files from tftplog and tftpboot directory
+          rm -rf $LOG_DIR/tftplog/* /tftpboot/* >/dev/null 2>&1
+          if [ $? -eq 0 ]; then
+              echo $LOG_RM_SUCCESS >> $LOG_FILE
+          else
+              echo $LOG_RM_ERROR >> $LOG_FILE
+              exit 1
+          fi
+        dest: /usr/local/sbin/tar.sh        #locatie van het sript.    
+
+    - name: Voeg de cron-taak toe
+      ansible.builtin.cron:
+        name: "tftp-log"
+        state: present
+        minute: "55"
+        hour: "23"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        job: "/usr/local/sbin/log.sh"
+
+    - name: Voeg de cron-taak toe
+      ansible.builtin.cron:
+        name: "tar"
+        state: present
+        minute: "55"
+        hour: "23"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        job: "/usr/local/sbin/tar.sh"        
+
+    
+  
+
+
+    
+
+
+    

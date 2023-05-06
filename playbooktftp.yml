@@ -1,8 +1,8 @@
 ---
-- name: installing tftpd-hpa.
-  hosts: node1
-  remote_user: rudi
-  become: True
+- name: installing tftpd-hpa.               #Naam van de playbook.
+  hosts: node1                              #Naam van de host.
+  remote_user: rudi                         #Naam van de user.
+  become: True                              #Wordt root.
  
   tasks:
     - name: Ping node1                      #om te testen of de node bereikbaar is voor de installatie begint.
@@ -19,7 +19,8 @@
         state: directory
         owner: tftp                         #pas owner aan naar tftp.
         group: tftp                         #pas group aan naar tftp.
-        mode: '0777'                        #zorg dat er in deze directory kan gelezen, geschreven en uitvoerbaar is.
+        mode: '0744'                        #zorg dat er in deze directory kan gelezen en geschreven worden.
+        mode: +x                            #zorg dat deze directory uitvoerbaar is.
     
     - name: Copy file as backup.
       ansible.builtin.copy:
@@ -57,19 +58,12 @@
 
     - name: Make a directory and give it the right permissions.
       ansible.builtin.file:
-        path: /home/rudi/tar-files          #Maak een tftpboot fdirectory.                 
+        path: /home/rudi/tftplog            #Maak een tftpboot directory.                 
         state: directory
-        owner: rudi                         #pas owner aan naar tftp.
-        group: rudi                         #pas group aan naar tftp.
-        mode: '0777'
-
-    - name: Make a directory and give it the right permissions.
-      ansible.builtin.file:
-        path: /home/rudi/tftplog            #Maak een tftpboot fdirectory.                 
-        state: directory
-        owner: rudi                         #pas owner aan naar tftp.
-        group: rudi                         #pas group aan naar tftp.
-        mode: '0777'
+        owner: rudi                         #pas owner aan naar rudi.
+        group: rudi                         #pas group aan naar rudi.
+        mode: '0744'                        #zorg dat er in deze directory kan gelezen en geschreven worden.
+        mode: +x                            #zorg dat deze directory uitvoerbaar is.
 
     - name:  Aanmaken van een file om scrip te maken.
       ansible.builtin.file:
@@ -148,26 +142,27 @@
               echo $LOG_RM_ERROR >> $LOG_FILE
               exit 1
           fi
+
         dest: /usr/local/sbin/tar.sh        #locatie van het sript.    
 
-    - name: Voeg de cron-taak toe
+    - name: Voeg de cron-taak toe           #cronjob om de log.sh uit te voeren.
       ansible.builtin.cron:
-        name: "tftp-log"
-        state: present
-        minute: "55"
-        hour: "23"
-        day: "*"
+        name: "tftp-log"                    #naam van de cronjob.
+        state: present                      #aanmaken van de cronjob.
+        minute: "30"                        #minuut van uitvoering.
+        hour: "23"                          #uur van uitvoering.
+        day: "*"                            #iedere dag van de maand.
         month: "*"
         weekday: "*"
-        job: "/usr/local/sbin/log.sh"
+        job: "/usr/local/sbin/log.sh"       #locatie van het script.
 
-    - name: Voeg de cron-taak toe
+    - name: Voeg de cron-taak toe           #idem als hierboven maar voor de tar.sh.
       ansible.builtin.cron:
         name: "tar"
         state: present
         minute: "55"
         hour: "23"
-        day: "*"
+        day: "15"                           #15de van de maand.
         month: "*"
         weekday: "*"
         job: "/usr/local/sbin/tar.sh"        

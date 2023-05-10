@@ -80,6 +80,7 @@
           LOG_FILE=$LOG_DIR/tftp-$DATE.log
 
           grep "in.tftpd" /var/log/syslog | grep "in.tftpd" | grep filename | cut -d" " -f1-4,6-11 >> $LOG_FILE
+          grep "in.tftpd" /var/log/syslog.1 | grep "in.tftpd" | grep filename | cut -d" " -f1-4,6-11 >> $LOG_FILE
         dest: /usr/local/sbin/log.sh        #locatie van het sript.
 
     - name:  Aanmaken van een file om scrip te maken.

@@ -50,6 +50,7 @@ Deze file is nodig omdat er dagelijks een script zal runnen via crontab om de tf
 
 Uitleg wat het script doet:
 
+Er wordt 2 keer een grep uitgevoerd.  Blijkbaar wordt er regelmatig gewisseld tussen syslog en syslog.1 om de logs weg te schrijven.  Telkens er een .gz wordt aangemaakt omdat de syslog te groot is veranderd de locatie waar de logs worden weggeschreven.  Omdit op te lossen voer ik dus een grep in syslog en syslog.1 uit.
 
 •	grep "in.tftpd" /var/log/syslog: zoekt naar lijnen in het syslog-bestand die de string "in.tftpd" bevatten.
 

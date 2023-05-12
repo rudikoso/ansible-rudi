@@ -1,9 +1,7 @@
 # Opdracht automatiseren voor SIMLAB2
  
 Voor deze opdracht zal ik de service tftp installeren en configureren via een playbook.
- 
-## start met een ping
-Voor ik de installatie begin voer ik een ping uit.  Krijg ik hier een error dan weet ik dat de machine niet bereikbaar is.
+Verder zijn er 2 scripts aan toegevoegd. Script log.sh om de logs uit syslog te halen. Script tar.sh om iedere maand een tarball te maken van de inhoud van de map /tftpboot en /tftplogs
  
 ## Installeer tftpd-hpa
 Na de replay van de ping wordt tftpd-hpa geinstalleerd.
@@ -14,7 +12,7 @@ https://docs.ansible.com/ansible/latest/collections/ansible/builtin/package_modu
 
 ## Maak de directory /tftpboot aan.
 https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html
-Plaats deze in de root en geef het een umask van 0777.  Pas owner en group aan naar tftp:tftp
+Plaats deze in de root. Pas owner en group aan naar tftp:tftp.  Als de directory /tftpboot niet in de root geplaats wordt kan er via archive geen running-config doorgestuurd worden vanuit de router.
 
 ## Neem een backup van de config tftpd-hpa.
 Voor dat je een config file bewerkt neem je best een backup van deze file.
@@ -41,10 +39,9 @@ Dit zal via het volde cmd gebeuren "sudo service tftpd-hpa start -verbosity 5 ".
 
 ## Maak de directory tftplogs aan in /home/rudi.
 Deze directory zal gebruikt worden om de tftp logs weg te schrijven.
-Zorg dat deze directory de juiste rechten heeft. mode 0744 zodat deze lees en schrijfbaar is voor de user en group en enkel leesbaar voor de rest. +x zodat de directory kan betreden worden.
 
 ## logfile.
-Vervolgens maak ik de file log.sh aan via touch en geef ik deze file mode 0777 rechten zodat deze uitvoerbaar wordt.
+Vervolgens maak ik de file log.sh aan via touch en geef ik deze file rechten 774 rechten zodat deze uitvoerbaar wordt.
 Deze file is nodig omdat er dagelijks een script zal runnen via crontab om de tftp logs uit de syslog weg te schijven. Dit script wordt in 
 /usr/local/sbin geplaatst.
 
@@ -62,7 +59,7 @@ Er wordt 2 keer een grep uitgevoerd.  Blijkbaar wordt er regelmatig gewisseld tu
 
 
 ## Maak een nieuw script aan.
-Ik maak een nieuw script aan via touch en geef deze file mode 0777 rechten zodat deze uitvoerbaar wordt.  
+Ik maak een nieuw script aan via touch en geef deze file rechten 774 rechten zodat deze uitvoerbaar wordt.  
 Dit is het tar.sh script.
 Dit script zal de tftp.log en tftpboot files comprimeren en verplaatsen naar /home/rudi/.
 dit script is ook in /usr/local/sbin geplaatst.

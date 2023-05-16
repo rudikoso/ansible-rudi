@@ -48,7 +48,7 @@
     #Opstarten vanuit de shell om verbosity 5 mee te geven.
 
     - name: Handmatig opstarten van tftpd-hpa.service.
-      command: sudo service tftpd-hpa start -verbosity 5    #Om logs te creëren moet de service handmatig en met verbosity 5 worden opgestart.
+      command: service tftpd-hpa start -verbosity 5    #Om logs te creëren moet de service handmatig en met verbosity 5 worden opgestart.
 
     #Logfile aanmaken en rechten aanpassen.
 

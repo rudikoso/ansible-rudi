@@ -1,90 +1,99 @@
 ---
-- name: installing tftpd-hpa.               #Naam van de playbook.
-  hosts: node1                              #Naam van de host.
-  remote_user: rudi                         #Naam van de user.
-  become: True                              #Word root.
- 
+- name: installing tftpd-hpa.               #Naam van de playbook
+  hosts: PI                              #Naam van de host
+  remote_user: rudi                         #Naam van de user
+  become: True                              #Word root
+
   tasks:
 
     - name: Install tftpd-hpa package.
       apt:
-        name: tftpd-hpa                     #installatie van tftpd-hpa.
+        name: tftpd-hpa                     #installatie van tftpd-hpa
         state: present
 
-    - name: Make a directory and give it the right permissions.
+    - name: Make a directory and give it the right permissions
       ansible.builtin.file:
-        path: /tftpboot                     #Maak een tftpboot fdirectory.                 
+        path: /tftpboot                     #Maak een tftpboot fdirectory                
         state: directory
-        owner: tftp                         #pas owner aan naar tftp.
-        group: tftp                         #pas group aan naar tftp.
-    
-    - name: Copy file as backup.
+        owner: tftp                         #pas owner aan naar tftp
+        group: tftp                         #pas group aan naar tftp
+  
+    - name: Copy file as backup
       ansible.builtin.copy:
-        src: /etc/default/tftpd-hpa         #Verwijs naar de locatie van de file.
-        dest: /etc/default/tftpd-hpa.BAK    #Maak een backup.
+        src: /etc/default/tftpd-hpa         #Verwijs naar de locatie van de file
+        dest: /etc/default/tftpd-hpa.BAK    #Maak een backup
 
     - name: Pas de regel TFTP_DIRECTORY aan in het bestand.
       ansible.builtin.lineinfile:
-        path: /etc/default/tftpd-hpa        #geef het pad op waar de file staat.
-        regexp: '^TFTP_DIRECTORY='          #geef aan welke lijn in de file moet aangepast worden.
-        line: 'TFTP_DIRECTORY="/tftpboot"'  #voeg /tftpboot toe aan de lijn.
+        path: /etc/default/tftpd-hpa        #geef het pad op waar de file staat
+        regexp: '^TFTP_DIRECTORY='          #geef aan welke lijn in de file moet aangepast worden
+        line: 'TFTP_DIRECTORY="/tftpboot"'  #voeg /tftpboot toe aan de lijn
 
-    #Zorgen dat er logs wordt aangemaakt. Hiervoor gaan we eerst de service van tftpd-hpa moeten stoppen.
-    #Na de configuratie zal de service handmatig opgestart worden.
+    #Zorgen dat er logs wordt aangemaakt. Hiervoor gaan we eerst de service van tftpd-hpa moeten stoppen
+    #Na de configuratie zal de service handmatig opgestart worden
 
-    - name: Stop the tftpd-hpa.service.
+    - name: Stop the tftpd-hpa.service
       ansible.builtin.service:
-        name: tftpd-hpa                     #Naam van de service die we gaan stoppen.                     
-        state: stopped                      #opdracht om te stoppen.
-    
-    #--verbose en -vvvv geven de maximum aan logging mee.
+        name: tftpd-hpa                     #Naam van de service die we gaan stoppen                    
+        state: stopped                      #opdracht om te stoppen
+  
+    #--verbose en -vvvv geven de maximum aan logging mee
 
-    - name: Pas de regel TFTP_OPTIONS aan in het bestand.
+    - name: Pas de regel TFTP_OPTIONS aan in het bestand
       ansible.builtin.lineinfile:
-        path: /etc/default/tftpd-hpa                        #geef het pad op waar de file staat.
-        regexp: '^TFTP_OPTIONS='                            #geef aan welke lijn in de file moet aangepast worden.
-        line: 'TFTP_OPTIONS="--secure --create --verbose"'  #voeg loging toe aan de lijn.
+        path: /etc/default/tftpd-hpa                        #geef het pad op waar de file staat aangepast worden
+        line: 'TFTP_OPTIONS="--secure --create --verbose"'  #voeg loging toe aan de lijn
 
-    #Opstarten vanuit de shell om verbosity 5 mee te geven.
+    #Opstarten vanuit de shell om verbosity 5 mee te geven
 
-    - name: Handmatig opstarten van tftpd-hpa.service.
-      command: service tftpd-hpa start -verbosity 5    #Om logs te creëren moet de service handmatig en met verbosity 5 worden opgestart.
+    - name: Handmatig opstarten van tftpd-hpa.service
+      command: service tftpd-hpa start -verbosity 5    #Om logs te creëren moet de service handmatig en met verbosity 5 worden opgestart
 
-    #Logfile aanmaken en rechten aanpassen.
+    #Logfile aanmaken en rechten aanpassen
 
-    - name: Make a directory and give it the right permissions.
+    - name: Make a directory and give it the right permissions
       ansible.builtin.file:
-        path: /home/rudi/tftplog            #Maak een tftpboot directory.                 
+        path: /home/rudi/tftplog            #Maak een tftplog directory                
         state: directory
-        owner: rudi                         #pas owner aan naar rudi.
-        group: rudi                         #pas group aan naar rudi.
+        owner: rudi                         #pas owner aan naar tftp
+        group: rudi                         #pas group aan naar tftp
 
-    - name:  Aanmaken van een file om scrip te maken.
+    - name:  Aanmaken van een file om scrip te maken
       ansible.builtin.file:
-        path: /usr/local/sbin/log.sh        #locatie van het script.
-        state: touch                        #Aanmaken van de file log.sh.
-        mode: '0774'                        #Geef alle rechten aan user en group, andere enkel lezen.
+        path: /usr/local/sbin/log.sh        #locatie van het script
+        state: touch                        #Aanmaken van de file log.sh
+        mode: '0774'                        #Geef alle rechten aan user en group, andere enkel lezen
 
     - name: Create Bash script.
-      ansible.builtin.blockinfile:          #Plak deze inhoud in het script. Zie README.
+      ansible.builtin.blockinfile:          #Plak deze inhoud in het script. Zie README
         content: |
           #!/bin/bash
+
           LOG_DIR=/home/rudi/tftplog
-          DATE=$(date '+%Y-%m-%d-%H-%M')
-          LOG_FILE=$LOG_DIR/tftp-$DATE.log
+          DATE=$(date '+%Y-%m-%d')
+          LOG_FILE="$LOG_DIR/tftp-$DATE.log"
+          FULL_LOG_FILE="$LOG_DIR/fulllog-$DATE.log"
+          CURRENT_DATE=$(date '+%b %d')
 
-          grep "in.tftpd" /var/log/syslog | grep "in.tftpd" | grep filename | cut -d" " -f1-4,6-11 >> $LOG_FILE
-          grep "in.tftpd" /var/log/syslog.1 | grep "in.tftpd" | grep filename | cut -d" " -f1-4,6-11 >> $LOG_FILE
-        dest: /usr/local/sbin/log.sh        #locatie van het sript.
+          grep -E "$CURRENT_DATE.*in\.tftpd.*WRQ" /var/log/syslog | grep -v "Invoked with content" | cut -d" " -f1-4,6-11 >> "$LOG_FILE"
+          grep -E "$CURRENT_DATE.*in\.tftpd.*RRQ" /var/log/syslog | grep -v "Invoked with content" | cut -d" " -f1-4,6-11 >> "$LOG_FILE"
 
-    - name:  Aanmaken van een file om scrip te maken.
+          grep -E "$CURRENT_DATE.*in\.tftpd.*WRQ" /var/log/syslog.1 | grep -v "Invoked with content" | cut -d" " -f1-4,6-11 >> "$LOG_FILE"
+          grep -E "$CURRENT_DATE.*in\.tftpd.*RRQ" /var/log/syslog.1 | grep -v "Invoked with content" | cut -d" " -f1-4,6-11 >> "$LOG_FILE"
+
+          grep "in\.tftp" /var/log/syslog /var/log/syslog >> "$FULL_LOG_FILE"
+          grep "in\.tftp" /var/log/syslog /var/log/syslog.1 >> "$FULL_LOG_FILE"
+
+        dest: /usr/local/sbin/log.sh        #locatie van het sript
+
+    - name:  Aanmaken van een file om scrip te maken
       ansible.builtin.file:
-        path: /usr/local/sbin/tar.sh        #locatie van het script.
-        state: touch                        #Aanmaken van de file log.sh.
+        path: /usr/local/sbin/tar.sh        #locatie van het script
+        state: touch                        #Aanmaken van de file log.sh
         mode: '0774'                        ##Geef alle rechten aan user en group, andere enkel lezen.
 
     - name: Create Bash script
-      ansible.builtin.blockinfile:          #Script om een Tar te maken van alle logs in /tftplog en tftp-files in /tftpboot. Zie README.
+      ansible.builtin.blockinfile:          #Script om een Tar te maken van alle logs in /tftplog en tftp-files in /tftpboot. Zie README
         content: |
           #!/bin/bash
           LOG_DIR=/home/rudi/
@@ -138,35 +147,26 @@
               exit 1
           fi
 
-        dest: /usr/local/sbin/tar.sh        #locatie van het sript.    
+        dest: /usr/local/sbin/tar.sh        #locatie van het sript    
 
-    - name: Voeg de cron-taak toe.          #cronjob om de log.sh uit te voeren.
+    - name: Voeg de cron-taak toe.          #cronjob om de log.sh uit te voeren
       ansible.builtin.cron:
-        name: "tftp-log"                    #naam van de cronjob.
-        state: present                      #aanmaken van de cronjob.
-        minute: "30"                        #minuut van uitvoering.
-        hour: "23"                          #uur van uitvoering.
-        day: "*"                            #iedere dag van de maand.
+        name: "tftp-log"                    #naam van de cronjob
+        state: present                      #aanmaken van de cronjob
+        minute: "30"                        #minuut van uitvoering
+        hour: "23"                          #uur van uitvoering
+        day: "*"                            #iedere dag van de maand
         month: "*"
         weekday: "*"
-        job: "/usr/local/sbin/log.sh"       #locatie van het script.
+        job: "/usr/local/sbin/log.sh"       #locatie van het script
 
-    - name: Voeg de cron-taak toe.          #idem als hierboven maar voor de tar.sh.
+    - name: Voeg de cron-taak toe.          #idem als hierboven maar voor de tar.sh
       ansible.builtin.cron:
         name: "tar"
         state: present
         minute: "55"
         hour: "23"
-        day: "15"                           #15de van de maand.
+        day: "15"                           #15de van de maand
         month: "*"
         weekday: "*"
-        job: "/usr/local/sbin/tar.sh"        
-
-    
-  
-
-
-    
-
-
-    
+        job: "/usr/local/sbin/tar.sh"       #locatie van het script

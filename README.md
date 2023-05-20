@@ -49,19 +49,19 @@ Uitleg wat het script doet:
 
 Er wordt 2 keer een grep uitgevoerd.  Blijkbaar wordt er regelmatig gewisseld tussen syslog en syslog.1 om de logs weg te schrijven.  Telkens er een .gz wordt aangemaakt omdat de syslog te groot is veranderd de locatie waar de logs worden weggeschreven.  Omdit op te lossen voer ik dus een grep in syslog en syslog.1 uit.
 
-•	grep "in.tftpd" /var/log/syslog: zoekt naar lijnen in het syslog-bestand die de string "in.tftpd" bevatten.
-
-•	grep "in.tftpd" | grep filename: filtert verder de uitvoer van de vorige grep-opdracht door alleen de regels te behouden die ook de string "filename" bevatten.
+•	grep -E "$CURRENT_DATE.*in\.tftpd.*WRQ" /var/log/syslog: zoekt naar lijnen in het syslog-bestand die de string "in.tftpd" bevatten.
+Zelfde voor *RRQ*.  Dit zowel in syslog en syslog.1
 
 •	cut -d" " -f1-4,6-11: knipt vervolgens de regels op basis van het scheidingsteken "spatie" (-d" ") en bewaart alleen de eerste vier velden en velden 6 tot en met 11. De velden bevatten informatie over de datum en tijd, de naam van de server, het IP-adres van de client en de bestandsnaam die door de client is opgevraagd.
 
-•	>> /home/rudi/tftp.log: voegt de uitvoer toe aan het bestand "/home/rudi/tftp.log". Het gebruik van de dubbele pijl (>>) betekent dat de uitvoer wordt toegevoegd aan het einde van het bestand in plaats van het bestaande bestand te overschrijven.
+•	>> $LOG_FILE zal alles wegschrijven naar /home/rudi/tftplog.
 
+•  grep "in\.tftp" /var/log/syslog /var/log/syslog >> "$FULL_LOG_FILE"  zal een volledig log maken van alles wat tftp betreft.  Dit zowel in syslog als syslog.1
 
 ## Maak een nieuw script aan.
 Ik maak een nieuw script aan via touch en geef deze file rechten 774 rechten zodat deze uitvoerbaar wordt.  
 Dit is het tar.sh script.
-Dit script zal de tftp.log en tftpboot files comprimeren en verplaatsen naar /home/rudi/.
+Dit script zal de tftplog en tftpboot files comprimeren en verplaatsen naar /home/rudi/.
 dit script is ook in /usr/local/sbin geplaatst.
 
 Uitleg over het script:
